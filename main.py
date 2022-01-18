@@ -20,19 +20,19 @@ def file_name_encrypt(url):
     md5_inst.update(url.encode())
     return md5_inst.hexdigest()
 
-def save_org_img(url,dir_position):
-    if not os.path.exists(dir_position):
-        os.mkdir(dir_position)
+def save_org_img(url,filedir):
+    if not os.path.exists(filedir):
+        os.mkdir(filedir)
     res = requests.get(url)
     file_name = file_name_encrypt(url)
     img_fp= res.content
-    with open(os.path.join(dir_position,file_name)+'.jpg', 'wb') as f:
-        print(os.path.join(dir_position,file_name))
+    with open(os.path.join(filedir,file_name)+'.jpeg', 'wb') as f:
+        print(os.path.join(filedir,file_name))
          # for data in res.iter_content(128):
          #    f.write(data)
         f.write(img_fp)
     # yield dir_position+file_name
-    return os.path.join(dir_position,file_name)
+    return os.path.join(filedir,file_name)+'.jpeg'
 
 def img_position_join(x,y):
     if isinstance(y,int):
@@ -40,12 +40,14 @@ def img_position_join(x,y):
     return y+str(x)
 
 
-def insert_img(sh, line, fp,):
-    sh.row_dimensions[line].height=50
-    img = Image(fp)
+# def insert_img(sh, line, filedir,img_positon):
+def insert_img(sh, filedir,img_positon):
+    print(img_positon)
+    # sh.row_dimensions[line].height=50
+    img = Image(filedir)
     print(img.width,img.height,img.format)
-    img.width, img.height=img.width/10,img.height/10
-    sh.add_image(img, 'A1')
+    img.width, img.height=img.width/8,img.height/8
+    sh.add_image(img, img_positon)
 
 def pd_read_excel():
     wb = Workbook()
@@ -75,12 +77,27 @@ if __name__ == "__main__":
     # sh = wb.active
     wb = load_workbook(seed_get())
     ws = wb['Sheet1']
-    print(ws.max_row)
-    for fv in ws[2:ws.max_row]:
-        # for sv in fv:
-#         #     print(sv.value)
+    print(ws.max_column)
+    ws.insert_cols(2,1)
+    ws['B1']='img_exhibit'
+
+#     for fv in ws[2:ws.max_row]:
+    for fv in ws.iter_rows(min_row=2,min_col=1):
         print(fv[1].value)
-        save_org_img(fv[1].value,r'test_img')
+        img_dir = save_org_img(fv[2].value, r'test_img')
+        print(img_dir)
+        insert_img(ws,img_dir,img_position_join(fv[2].row,str(1)))
+    wb.save('demo.xlsx')
+
+#         # for sv in fv:
+# #         #     print(sv.value)
+#         print(fv[2].value)
+#         img_dir = save_org_img(fv[2].value,r'test_img')
+#         print(img_dir)
+
+#     print(ws.max_column)
+#     print(get_column_letter(ws.max_column))
+#     wb.save('demo.xlsx')
 
     # # sh.column_dimensions[IMG_COL].width= 10
     # sh.column_dimensions['AI'].width= 10
