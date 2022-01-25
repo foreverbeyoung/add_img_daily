@@ -5,6 +5,7 @@ from math import ceil
 
 import xlsxwriter
 import requests
+from fake_useragent import UserAgent
 from openpyxl import Workbook,load_workbook
 
 from openpyxl.drawing.image import Image
@@ -16,9 +17,18 @@ import openpyxl
 from PIL import JpegImagePlugin
 JpegImagePlugin._getmp = lambda  x:None
 
-excel_dir = 'demo.xlsx'
+excel_dir = 'anker创新.xlsx'
 img_org_save = r'F:\Amazon\看这里\test_imgs'
 
+def get_header(referer="https://www.amazon.com/dp/product-reviews/B01MQU5LW7"):
+    return {
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'accept-encoding': 'gzip, deflate, br',
+        'accept-language': 'en,zh-CN;q=0.9,zh;q=0.8',
+        'User-Agent': UserAgent().firefox,
+        # 'User-Agent': random.choice(agent),
+        'referer': referer,
+    }
 def seed_get():
     # return os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, "demo.xlsx"))
     return os.path.abspath(os.path.join(os.path.dirname(__file__), excel_dir))
@@ -32,17 +42,20 @@ def file_name_encrypt(url):
 def save_org_img(url,filedir):
     if not os.path.exists(filedir):
         os.mkdir(filedir)
-    res = requests.get(url)
-    file_name = file_name_encrypt(url)
-    img_fp= res.content
-    with open(os.path.join(filedir,file_name)+'.jpeg', 'wb') as f:
-        # print(os.path.join(filedir,file_name))
-         # for data in res.iter_content(128):
-         #    f.write(data)
-        f.write(img_fp)
-    f.close()
-    # yield dir_position+file_name
-    return os.path.join(filedir,file_name)+'.jpeg'
+    try:
+        res = requests.get(url,headers=get_header(),timeout=120)
+        file_name = file_name_encrypt(url)
+        img_fp= res.content
+        with open(os.path.join(filedir,file_name)+'.jpeg', 'wb') as f:
+            # print(os.path.join(filedir,file_name))
+             # for data in res.iter_content(128):
+             #    f.write(data)
+            f.write(img_fp)
+        f.close()
+        # yield dir_position+file_name
+        return os.path.join(filedir,file_name)+'.jpeg'
+    except:
+        return None
 
 def img_position_join(x,y):
     if isinstance(y,int):
@@ -94,18 +107,20 @@ if __name__ == "__main__":
     # sh = wb.active
     wb = load_workbook(seed_get())
     ws = wb['Sheet1']
+
     print(ws.max_column)
-    ws.insert_cols(2,1)
+    ws.insert_cols(2,1)  #插入第二列
     ws['B1']='img_exhibit'
-    ws.column_dimensions['B'].width = 10
+    ws.column_dimensions['B'].width = 10  #设置列的宽度
 
 #     for fv in ws[2:ws.max_row]:
     for fv in ws.iter_rows(min_row=2,min_col=1):
-
-        img_dir = save_org_img(fv[2].value, img_org_save)
-        print(img_dir)
-        # input()
-        insert_img(ws,fv[2].row,img_dir,img_position_join(fv[2].row,2))
+        if fv[2].value:
+            img_dir = save_org_img(fv[2].value, img_org_save)
+            print(img_dir)
+            # input()
+            if img_dir:
+                insert_img(ws,fv[2].row,img_dir,img_position_join(fv[2].row,2))
     wb.save(excel_dir)
 
 #         # for sv in fv:
